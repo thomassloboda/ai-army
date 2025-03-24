@@ -31,4 +31,10 @@ jobs:
         run: npm run build
 
       - name: Execute
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          DISCORD_CHANNEL_ID: ${{ vars.DISCORD_CHANNEL_ID }}
+          REDIRECT_SECRET: ${{ secrets.REDIRECT_SECRET }}
+          GITHUB_PERSONAL_ACCESS_TOKEN: ${{ env.GITHUB_TOKEN }}
         run: npm run cli -- --url ${{ github.event.client_payload.url }}
