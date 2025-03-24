@@ -1,0 +1,34 @@
+name: Generate resume from URL and publish it
+
+on:
+  repository_dispatch:
+    types: [resume_publish]
+
+jobs:
+  generate_redirect:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check API Key
+        run: |
+          if [ "${{ github.event.client_payload.key }}" != "${{ secrets.REDIRECT_SECRET }}" ]; then
+            echo "Invalid key"
+            exit 1
+          fi
+
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          - node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Execute
+        run: npm run cli -- --url ${{ github.event.client_payload.url }}
