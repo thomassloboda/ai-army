@@ -1,0 +1,5 @@
+./README.md
+./package.json
+./tsconfig.json
+./src/cli/index.ts
+./src/application/use-cases/process-web-page.use-case.ts
