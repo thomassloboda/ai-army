@@ -20,23 +20,22 @@ export class ProcessWebPageUseCase {
         let page: PageContent = { url: originalUrl, redirect, rawContent };
 
         const extractionPrompt = `
-Extrait le contenu intéressant de cette page HTML : ${rawContent}.
-Conserve le formatage et restitue le contenu en Markdown.
-    `;
+            Extrait le contenu intéressant de cette page HTML : ${rawContent}.
+            Conserve le formatage et restitue le contenu en Markdown.
+        `;
         page.extractedContent = await this.chatService.sendMessage(extractionPrompt);
 
         const translatePrompt = `
-Veuillez résumer le contenu de la page web : ${page.extractedContent}.
-Le résumé doit être en français, clair et informatif (max 2000 caractères) et formatté pour Discord avec :
-- Un titre principal en majuscules
-- Des sous-titres délimités par des tirets (—) si nécessaire
-- Des listes à puces avec des tirets (-)
-- Un lien vers ${redirect} avec le texte : "👉 [Lien](${redirect})"
-Priorisez l'essentiel en limitant à 2 phrases par section.
-    `;
+            Veuillez résumer le contenu de la page web : ${page.extractedContent}.
+            Le résumé doit être en français, clair et informatif (max 2000 caractères) et formatté pour Discord avec :
+            - Un titre principal en majuscules
+            - Des sous-titres délimités par des tirets (—) si nécessaire
+            - Des listes à puces avec des tirets (-)
+            - Un lien vers ${redirect} avec le texte : "👉 [Lien](${redirect})"
+            Priorisez l'essentiel en limitant à 2 phrases par section.
+        `;
         page.translatedContent = await this.chatService.sendMessage(translatePrompt);
 
-        // 5. Notification (par exemple Discord)
         await this.notificationService.notify(page.translatedContent);
 
         return page;
