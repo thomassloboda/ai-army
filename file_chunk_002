@@ -1,0 +1,4 @@
+./src/domain/ports/short-url-service.ts
+./src/domain/ports/web-scraper.ts
+./src/domain/ports/chat-service.ts
+./src/domain/entities/page-content.ts

@@ -1,0 +1,5 @@
+./src/infrastructure/adapters/axios-web-scraper.ts
+./src/infrastructure/adapters/openai-chat-service.ts
+./src/infrastructure/adapters/discord-notification-service.ts
+./src/infrastructure/adapters/github-short-url-service.ts
+./src/domain/ports/notification-service.ts
