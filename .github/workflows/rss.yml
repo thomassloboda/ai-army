@@ -12,13 +12,6 @@ jobs:
   summarize-rss:
     runs-on: ubuntu-latest
     steps:
-      - name: Check API Key
-        run: |
-          if [ "${{ github.event.client_payload.key }}" != "${{ secrets.REDIRECT_SECRET }}" ]; then
-            echo "Invalid key"
-            exit 1
-          fi
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
