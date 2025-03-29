@@ -1,11 +1,12 @@
-import axios from "axios";
 import { nanoid } from "nanoid";
 import type  { ShortUrlService } from "../../domain/ports/short-url-service";
+import {axiosInstance} from "../utils/axios-instance";
 
 export class GithubShortUrlService implements ShortUrlService {
     async createShortenedURL(url: string): Promise<{ url: string; redirect: string }> {
         const id = nanoid(8);
-        await axios.post(
+
+        const response = await axiosInstance.post(
             "https://api.github.com/repos/thomassloboda/url-shortener/dispatches",
             {
                 event_type: "generate_redirect",
@@ -23,6 +24,11 @@ export class GithubShortUrlService implements ShortUrlService {
                 },
             }
         );
+
+        if (response.status < 200 || response.status >= 300) {
+            console.error(response.data);
+        }
+
         return {
             url,
             redirect: `https://thomas.sloboda.fr/url-shortener/${id}`,

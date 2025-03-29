@@ -4,4 +4,5 @@ export interface PageContent {
     rawContent: string;
     extractedContent?: string;
     translatedContent?: string;
+    contentReference?: string;
 }
