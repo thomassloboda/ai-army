@@ -1,3 +1,3 @@
 export interface WebScraper {
-    getPageContent(url: string): Promise<string>;
+    getPageContent(url: string, selector: string): Promise<string>;
 }

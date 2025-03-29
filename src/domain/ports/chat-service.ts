@@ -1,3 +1,7 @@
 export interface ChatService {
-    sendMessage(message: string): Promise<string>;
+    attachContent(filePath: string): Promise<string>;
+
+    detachContent(contentReference: string): Promise<void>;
+
+    sendMessage(message: string, attachedContentReference?: string): Promise<string>;
 }
