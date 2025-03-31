@@ -17,31 +17,57 @@ jobs:
       - name: Get changed files
         id: changed_files
         run: |
-          echo "FILES=$(jq -c '[.[] | .filename]' <<< $(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files"))" >> $GITHUB_ENV
+          set -e
+          FILES=$(curl -s -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" | \
+            jq -r '[.[].filename] | @json')
+          
+          echo "files=$FILES" >> "$GITHUB_OUTPUT"
 
       - name: Analyze code with OpenAI
+        id: review
         run: |
-          FILES=$(echo $FILES | jq -r '.[]')
-          PROMPT="Analyze the following code changes and provide feedback on quality, maintainability, and best practices:\n\n"
-          for FILE in $FILES; do
-            CONTENT=$(cat "$FILE")
-            PROMPT="$PROMPT\n\nFile: $FILE\n$CONTENT"
+          set -e
+          FILES='${{ steps.changed_files.outputs.files }}'
+          echo "Analyzing files: $FILES"
+          echo "" > review.txt
+          
+          for FILE in $(echo $FILES | jq -r '.[]'); do
+            if [[ -f "$FILE" ]]; then
+              CONTENT=$(cat "$FILE")
+              ESCAPED_CONTENT=$(echo "$CONTENT" | jq -Rs .)
+              PROMPT=$(jq -n --arg file "$FILE" --arg content "$ESCAPED_CONTENT" '{
+                model: "gpt-4-turbo",
+                messages: [
+                  {role: "system", content: "You are a helpful code reviewer."},
+                  {role: "user", content: ("Analyze the following code changes and provide feedback on quality, maintainability, and best practices:\n\nFile: " + $file + "\n" + $content)}
+                ]
+              }')
+          
+              RESPONSE=$(curl -s -X POST "https://api.openai.com/v1/chat/completions" \
+                -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
+                -H "Content-Type: application/json" \
+                -d "$PROMPT")
+          
+              echo "$RESPONSE" | jq -r '.choices[0].message.content' >> review.txt
+              echo "Review added for $FILE"
+            else
+              echo "File not found: $FILE" >&2
+            fi
           done
-          RESPONSE=$(curl -s -X POST "https://api.openai.com/v1/chat/completions" \
-            -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "model": "gpt-4-turbo",
-              "messages": [{"role": "system", "content": "You are a helpful code reviewer."},
-                           {"role": "user", "content": "'"$PROMPT"'"}]
-            }')
-          echo "$RESPONSE" | jq -r '.choices[0].message.content' >> review.txt
+          
+          REVIEW_CONTENT=$(jq -Rs '.' review.txt)
+          echo "review=$REVIEW_CONTENT" >> "$GITHUB_OUTPUT"
 
       - name: Post review as PR comment
+        if: steps.review.outputs.review != ''
         run: |
-          COMMENT=$(cat review.txt)
+          set -e
+          REVIEW_CONTENT=$(cat review.txt)
+          echo $REVIEW_CONTENT
+          JSON_PAYLOAD=$(jq -n --arg body "$REVIEW_CONTENT" '{body: $body}')
+          
           curl -s -X POST "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"body\": \"$COMMENT\"}"
+          -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d "$JSON_PAYLOAD"
